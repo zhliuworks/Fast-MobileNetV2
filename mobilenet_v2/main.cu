@@ -1,8 +1,5 @@
-#include "cudakernels/Conv.cuh"
-#include "cudakernels/Gemm.cuh"
-#include "cudakernels/ReduceMean.cuh"
-#include "nn/MobileNetV2.h"
-#include <cudnn.h>
+#include "fast_mobilenet/fastMobileNetV2.cuh"
+#include "cudnn/cudnnMobileNetV2.cuh"
 
 __host__ int main() {
     // compare our cuda kernels and cudnn in the inference of MobileNetV2
