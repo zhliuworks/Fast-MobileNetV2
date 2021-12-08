@@ -5,8 +5,8 @@
 
 class Linear : public Layer {
 public:
-    explicit Linear(int in_features = 1, int out_features = 1)
-            : in_features(in_features), out_features(out_features) {
+    explicit Linear(int in_features=1, int out_features=1) :
+        in_features(in_features), out_features(out_features) {
         
         size = out_features * in_features;
         weight = new float[size];
@@ -23,6 +23,7 @@ public:
         size = out_features * in_features;
         weight = new float[size];
         bias = new float[out_features];
+        return *this;
     }
 
     ~Linear() {
@@ -30,20 +31,22 @@ public:
         delete []bias;
     }
 
-    std::vector<std::pair<float*, std::vector<int>>> getParameters() {
-        return {
-            std::make_pair(weight, std::vector<int>{out_features, in_features}),
-            std::make_pair(bias, std::vector<int>{out_features})
-        };        
-
-    }
-
-    // show
     void show() {
         std::cout << "\033[32mLinear(\033[0m"
                   << in_features << ", "
                   << out_features
                   << "\033[32m)\033[0m";
+    }
+
+    int getType() {
+        return 2;
+    }
+
+    std::vector<std::pair<float*, std::vector<int>>> getParameters() {
+        return {
+            std::make_pair(weight, std::vector<int>{out_features, in_features}),
+            std::make_pair(bias, std::vector<int>{out_features})
+        };        
     }
 
     float *getWeight() { return weight; }

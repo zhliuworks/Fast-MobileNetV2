@@ -8,9 +8,12 @@ public:
     explicit GlobalAveragePool() {}
     ~GlobalAveragePool() {}
 
-    // show
     void show() {
         std::cout << "\033[34mGlobalAveragePool\033[0m";
+    }
+
+    int getType() {
+        return 1;
     }
 };
 

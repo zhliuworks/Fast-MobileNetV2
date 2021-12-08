@@ -13,6 +13,9 @@
 #define NUM_CONV 52
 #define NUM_RELU 35
 #define NUM_ADD  10
+// max size of intermediate representation, for batch_size = 1
+// that is [1, 96, 122, 122] -> 1 * 96 * 122 * 122 = 1428864
+#define MAX_SIZE_INTERMEDIATE 1428864
 
 class MobileNetV2 {
 public:
@@ -32,6 +35,9 @@ public:
     // show
     void show();
 
+    // get maximum size of intermediate representations
+    int getMaxIntermediateSize() { return MAX_SIZE_INTERMEDIATE; }
+
 private:
     std::string weights_path;
     Layer *entry;
@@ -44,8 +50,8 @@ private:
 
     void GetConvWeights(float *weight, float *bias, int idx);
     void GetGemmWeight(float *weight, float *bias);
-    void BuildInvertedResidual(int input_dim, int output_dim, int stride, int expansion_ratio,
-                               int &i_conv, int &i_relu, int &i_add);
+    void BuildInvertedResidual(int input_dim, int output_dim, int expansion_ratio, int stride,
+                               int &i_conv, int &i_relu, int &i_add, int i);
 };
 
 #endif // _NN_MOBILE_NET_V2

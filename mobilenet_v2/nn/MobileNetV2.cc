@@ -30,16 +30,13 @@ MobileNetV2::MobileNetV2(std::string weights_path) : weights_path(weights_path) 
     };
 
     int input_dim = 32;
+    int stride;
 
     for (auto &setting : inverted_residual_settings) {
         for (int i = 0; i < setting[2]; i++) {
-            if (i == 0) {
-                BuildInvertedResidual(input_dim, setting[1], setting[3], setting[0],
-                                      i_conv, i_relu, i_add);
-            } else {
-                BuildInvertedResidual(input_dim, setting[1], 1, setting[0],
-                                      i_conv, i_relu, i_add);
-            }
+            stride = (i == 0) ? setting[3] : 1;
+            BuildInvertedResidual(input_dim, setting[1], setting[0], stride,
+                                  i_conv, i_relu, i_add, i);
             input_dim = setting[1];
         }
     }
@@ -130,10 +127,11 @@ void MobileNetV2::GetGemmWeight(float *weight, float *bias) {
 }
 
 
-void MobileNetV2::BuildInvertedResidual(int input_dim, int output_dim, int stride, int expansion_ratio,
-                                        int &i_conv, int &i_relu, int &i_add) {
+void MobileNetV2::BuildInvertedResidual(int input_dim, int output_dim, int expansion_ratio, int stride,
+                                        int &i_conv, int &i_relu, int &i_add, int i) {
 
     int hidden_dim = input_dim * expansion_ratio;
+
     if (expansion_ratio == 1) {
         // depthwise convolution
         Conv2dLayers[i_conv] = Conv2d(hidden_dim, hidden_dim, 3, stride, 1, hidden_dim);
@@ -162,7 +160,13 @@ void MobileNetV2::BuildInvertedResidual(int input_dim, int output_dim, int strid
     }
 
     if (stride == 1 && input_dim == output_dim) {
-        ResidualAddLayers[i_add].setResidual(Conv2dLayers[i_conv - 4]);
+        if (i == 1) {
+            ResidualAddLayers[i_add].setResidual(Conv2dLayers[i_conv - 4]);
+            Conv2dLayers[i_conv - 4].setIsBypass();
+        } else {
+            ResidualAddLayers[i_add].setResidual(ResidualAddLayers[i_add - 1]);
+            ResidualAddLayers[i_add - 1].setIsBypass();
+        }
         curr = curr->setNext(ResidualAddLayers[i_add++]);
     }
 }
