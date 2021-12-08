@@ -14,11 +14,12 @@ __host__ void cudnnConvForwardWrapper(
     bool         activation,    // whether to apply activation function (ReLU6)
     bool         tensor_core,   // whether to allow use of tensor core
     float       *y_data_h,      // output feature maps from host (user-allocated)
-    TensorShape *y_shape        // output shape (user-allocated)
+    TensorShape *y_shape,       // output shape (user-allocated)
+    bool         print_algo=false   // whether to print used conv algorithm
 ) {
 
     // shape check
-    if (w_shape.c != x_shape.c) {
+    if (w_shape.c * conv_cfg.group != x_shape.c) {
         fprintf(stderr, "input channel of w and x are not matched\n");
         exit(EXIT_FAILURE);
     }
@@ -181,12 +182,12 @@ __host__ void cudnnConvForwardWrapper(
     cudnnActivationDescriptor_t acti_desc;
     CUDNN_CHECK(cudnnCreateActivationDescriptor(&acti_desc));
     if (activation) {
-        // ReLU6 activation
+        // ReLU activation (first apply ReLU, and then ReLU6)
         CUDNN_CHECK(cudnnSetActivationDescriptor(
             acti_desc,
-            CUDNN_ACTIVATION_RELU,  // not `CUDNN_ACTIVATION_CLIPPED_RELU`
+            CUDNN_ACTIVATION_RELU,
             CUDNN_NOT_PROPAGATE_NAN,
-            6.0f
+            0.0f
         ));
     } else {
         // bypass the activation
@@ -202,21 +203,22 @@ __host__ void cudnnConvForwardWrapper(
         conv_algo = CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM;
     }
 
-    /* print used algorithm
-    printf("Using convolution algorithm: ");
-    switch (conv_algo) {
-         case 0: printf("IMPLICIT_GEMM");         break;
-         case 1: printf("IMPLICIT_PRECOMP_GEMM"); break;
-         case 2: printf("GEMM");                  break;
-         case 3: printf("DIRECT");                break;
-         case 4: printf("FFT");                   break;
-         case 5: printf("FFT_TILING");            break;
-         case 6: printf("WINOGRAD");              break;
-         case 7: printf("WINOGRAD_NONFUSED");     break;
-        default: exit(EXIT_FAILURE);
+    /* print used algorithm */
+    if (print_algo) {
+        printf("Using convolution algorithm: ");
+        switch (conv_algo) {
+            case 0: printf("IMPLICIT_GEMM");         break;
+            case 1: printf("IMPLICIT_PRECOMP_GEMM"); break;
+            case 2: printf("GEMM");                  break;
+            case 3: printf("DIRECT");                break;
+            case 4: printf("FFT");                   break;
+            case 5: printf("FFT_TILING");            break;
+            case 6: printf("WINOGRAD");              break;
+            case 7: printf("WINOGRAD_NONFUSED");     break;
+            default: exit(EXIT_FAILURE);
+        }
+        printf("\n");
     }
-    printf("\n");
-    */
 
     /** 9. Workspace **/
     size_t ws_size;
@@ -231,10 +233,10 @@ __host__ void cudnnConvForwardWrapper(
     // printf("Workspace size: %lu\n", ws_size);
 
     /** 10. Perform Forward Convolution **/
-    
-    /*  only convolution
+
+    /*  convolution + bias
     float alpha = 1.0f;
-    float beta = 0.0f;
+    float beta = 1.0f;
     CUDNN_CHECK(cudnnConvolutionForward(
         ctx,
         &alpha,
@@ -247,25 +249,47 @@ __host__ void cudnnConvForwardWrapper(
     ));
     */
 
-    // convolution + bias + activation
-    float alpha1 = 1.0f;
-    float alpha2 = 0.0f;
+    /* convolution + bias + ReLU activation */
+    // note that `CUDNN_ACTIVATION_CLIPPED_RELU` is not allowed in `cudnnConvolutionBiasActivationForward()`,
+    // we can apply ReLU first, and then ReLU6 with `cudnnActivationForward()`
+    float alpha = 1.0f;
+    float beta = 0.0f;
     CUDNN_CHECK(cudnnConvolutionBiasActivationForward(
         ctx,
-        &alpha1,
+        &alpha,
         x_desc, x_data_d,
         w_desc, w_data_d,
         conv_desc, conv_algo,
         ws_data, ws_size,
-        &alpha2,
+        &beta,
         // zDesc and destDesc need to match:
-        /* https://docs.nvidia.com/deeplearning/cudnn/api/
-           index.html#cudnnConvolutionBiasActivationForward */
+        // https://docs.nvidia.com/deeplearning/cudnn/api/
+        // index.html#cudnnConvolutionBiasActivationForward
         y_desc, y_data_d,
         b_desc, b_data_d,
         acti_desc,
         y_desc, y_data_d
     ));
+
+    /* ReLU6 activation */
+    if (activation) {
+        // reset activation descriptor to ReLU6
+        CUDNN_CHECK(cudnnSetActivationDescriptor(
+            acti_desc,
+            CUDNN_ACTIVATION_CLIPPED_RELU,
+            CUDNN_NOT_PROPAGATE_NAN,
+            6.0f
+        ));
+
+        CUDNN_CHECK(cudnnActivationForward(
+            ctx,
+            acti_desc,
+            &alpha,
+            y_desc, y_data_d,
+            &beta,
+            y_desc, y_data_d
+        ));
+    }
 
     // upload output data to host
     CUDA_CHECK(cudaMemcpy(
