@@ -17,9 +17,7 @@ int main() {
         assert(infile.is_open());
         for (int j = 0; j < size; j++) {
             infile >> curr;
-            if (abs(curr - weight[j]) > EPS) {
-                std::cout << "conv w diff: " << curr << '\t' << weight[j] << std::endl;
-            }
+            assert(abs(curr - weight[j]) < EPS);
         }
         infile.close();
 
@@ -29,9 +27,7 @@ int main() {
         assert(infile.is_open());
         for (int j = 0; j < size; j++) {
             infile >> curr;
-            if (abs(curr - bias[j]) > EPS) {
-                std::cout << "conv b diff: " << curr << '\t' << bias[j] << std::endl;
-            }
+            assert(abs(curr - bias[j]) < EPS);
         }
         infile.close();
     }
@@ -43,9 +39,7 @@ int main() {
     assert(infile.is_open());    
     for (int j = 0; j < size; j++) {
         infile >> curr;
-        if (abs(curr - weight[j]) > EPS) {
-            std::cout << "gemm w diff: " << curr << '\t' << weight[j] << std::endl;
-        }
+        assert(abs(curr - weight[j]) < EPS);
     }
     infile.close();
 
@@ -55,9 +49,7 @@ int main() {
     assert(infile.is_open());
     for (int j = 0; j < size; j++) {
         infile >> curr;
-        if (abs(curr - bias[j]) > EPS) {
-            std::cout << "gemm b diff: " << curr << '\t' << bias[j] << std::endl;
-        }
+        assert(abs(curr - bias[j]) < EPS);
     }
     infile.close();
 
