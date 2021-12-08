@@ -3,13 +3,19 @@
   reference: https://github.com/tonylins/pytorch-mobilenet-v2/blob/master/MobileNetV2.py
 '''
 
+import math
+
+import numpy as np
+import onnxruntime as rt
 import torch.nn as nn
 import torch.onnx
+from torchsummary import summary
+
 import onnx
 from onnx.numpy_helper import to_array
-import onnxruntime as rt
-import numpy as np
-import math
+
+np.random.seed(123)
+torch.manual_seed(123)
 
 
 def conv_bn(input, output, stride):
@@ -36,25 +42,27 @@ class InvertedResidual(nn.Module):
 
         if expansion_ratio == 1:
             self.conv = nn.Sequential(
-                ## depthwise convolution
-                nn.Conv2d(hidden_dim, hidden_dim, 3, stride, 1, groups=hidden_dim, bias=True),
+                # depthwise convolution
+                nn.Conv2d(hidden_dim, hidden_dim, 3, stride,
+                          1, groups=hidden_dim, bias=True),
                 # nn.BatchNorm2d(hidden_dim),
                 nn.ReLU6(inplace=True),
-                ## pointwise convolution, linear
+                # pointwise convolution, linear
                 nn.Conv2d(hidden_dim, output, 1, 1, 0, bias=True),
                 # nn.BatchNorm2d(output),
             )
         else:
             self.conv = nn.Sequential(
-                ## pointwise convolution, ReLU6
+                # pointwise convolution, ReLU6
                 nn.Conv2d(input, hidden_dim, 1, 1, 0, bias=True),
                 # nn.BatchNorm2d(hidden_dim),
                 nn.ReLU6(inplace=True),
-                ## depthwise convolution
-                nn.Conv2d(hidden_dim, hidden_dim, 3, stride, 1, groups=hidden_dim, bias=True),
+                # depthwise convolution
+                nn.Conv2d(hidden_dim, hidden_dim, 3, stride,
+                          1, groups=hidden_dim, bias=True),
                 # nn.BatchNorm2d(hidden_dim),
                 nn.ReLU6(inplace=True),
-                ## pointwise convolution, linear
+                # pointwise convolution, linear
                 nn.Conv2d(hidden_dim, output, 1, 1, 0, bias=True),
                 # nn.BatchNorm2d(output),
             )
@@ -68,7 +76,7 @@ class InvertedResidual(nn.Module):
 
 class MobileNetV2(nn.Module):
 
-    def __init__(self, num_class=1000):
+    def __init__(self, num_class=1000, onnx_path='mobilenet_v2.onnx'):
         super(MobileNetV2, self).__init__()
         input_channel = 32
         last_channel = 1280
@@ -94,9 +102,11 @@ class MobileNetV2(nn.Module):
         for expansion_ratio, output_channel, repeated_times, stride_first in inverted_residual_settings:
             for i in range(repeated_times):
                 if i == 0:
-                    self.features.append(InvertedResidual(input_channel, output_channel, stride_first, expansion_ratio))
+                    self.features.append(InvertedResidual(
+                        input_channel, output_channel, stride_first, expansion_ratio))
                 else:
-                    self.features.append(InvertedResidual(input_channel, output_channel, 1, expansion_ratio))
+                    self.features.append(InvertedResidual(
+                        input_channel, output_channel, 1, expansion_ratio))
                 input_channel = output_channel
 
         # build last several layers
@@ -109,8 +119,7 @@ class MobileNetV2(nn.Module):
         self.classifier = nn.Linear(last_channel, num_class)
 
         # initialize weights from given onnx file
-        self.initialize_weights()
-
+        self.initialize_weights(onnx_path)
 
     def forward(self, x):
         x = self.features(x)
@@ -118,20 +127,24 @@ class MobileNetV2(nn.Module):
         x = self.classifier(x)
         return x
 
-
-    def initialize_weights(self):
-        initializers = onnx.load('mobilenet_v2.onnx').graph.initializer
+    def initialize_weights(self, onnx_path):
+        initializers = onnx.load(onnx_path).graph.initializer
 
         # classifier
-        assert self.classifier.weight.data.shape == torch.tensor(to_array(initializers[0])).shape
-        assert self.classifier.bias.data.shape == torch.tensor(to_array(initializers[1])).shape
+        assert self.classifier.weight.data.shape == torch.tensor(
+            to_array(initializers[0])).shape
+        assert self.classifier.bias.data.shape == torch.tensor(
+            to_array(initializers[1])).shape
         self.classifier.weight.data = torch.tensor(to_array(initializers[0]))
         self.classifier.bias.data = torch.tensor(to_array(initializers[1]))
 
         # first conv2d
-        assert self.features[0][0].weight.data.shape == torch.tensor(to_array(initializers[2])).shape
-        assert self.features[0][0].bias.data.shape == torch.tensor(to_array(initializers[3])).shape
-        self.features[0][0].weight.data = torch.tensor(to_array(initializers[2]))
+        assert self.features[0][0].weight.data.shape == torch.tensor(
+            to_array(initializers[2])).shape
+        assert self.features[0][0].bias.data.shape == torch.tensor(
+            to_array(initializers[3])).shape
+        self.features[0][0].weight.data = torch.tensor(
+            to_array(initializers[2]))
         self.features[0][0].bias.data = torch.tensor(to_array(initializers[3]))
 
         # inverted residuals
@@ -141,43 +154,52 @@ class MobileNetV2(nn.Module):
             assert isinstance(self.features[i], InvertedResidual)
             for j in range(len(self.features[i].conv)):
                 if isinstance(self.features[i].conv[j], nn.Conv2d):
-                    assert self.features[i].conv[j].weight.data.shape == torch.tensor(to_array(initializers[idx_init])).shape
-                    assert self.features[i].conv[j].bias.data.shape == torch.tensor(to_array(initializers[idx_init + 1])).shape
-                    self.features[i].conv[j].weight.data = torch.tensor(to_array(initializers[idx_init]))
-                    self.features[i].conv[j].bias.data = torch.tensor(to_array(initializers[idx_init + 1]))
+                    assert self.features[i].conv[j].weight.data.shape == torch.tensor(
+                        to_array(initializers[idx_init])).shape
+                    assert self.features[i].conv[j].bias.data.shape == torch.tensor(
+                        to_array(initializers[idx_init + 1])).shape
+                    self.features[i].conv[j].weight.data = torch.tensor(
+                        to_array(initializers[idx_init]))
+                    self.features[i].conv[j].bias.data = torch.tensor(
+                        to_array(initializers[idx_init + 1]))
                     idx_init += 2
 
         # last conv2d
-        assert self.features[len(self.features) - 1][0].weight.data.shape == torch.tensor(to_array(initializers[idx_init])).shape
-        assert self.features[len(self.features) - 1][0].bias.data.shape == torch.tensor(to_array(initializers[idx_init + 1])).shape
-        self.features[len(self.features) - 1][0].weight.data = torch.tensor(to_array(initializers[idx_init]))
-        self.features[len(self.features) - 1][0].bias.data = torch.tensor(to_array(initializers[idx_init + 1]))
+        assert self.features[len(self.features) - 1][0].weight.data.shape == torch.tensor(
+            to_array(initializers[idx_init])).shape
+        assert self.features[len(self.features) - 1][0].bias.data.shape == torch.tensor(
+            to_array(initializers[idx_init + 1])).shape
+        self.features[len(
+            self.features) - 1][0].weight.data = torch.tensor(to_array(initializers[idx_init]))
+        self.features[len(
+            self.features) - 1][0].bias.data = torch.tensor(to_array(initializers[idx_init + 1]))
         idx_init += 2
 
         assert idx_init == len(initializers) - 1
 
 
-def compare_inference_results():
+def compare_inference_results(ref_onnx_path, my_onnx_path, rel_tol=1e-4):
     input_data = np.random.randn(1, 3, 244, 244).astype(np.float32)
 
-    sess_ref = rt.InferenceSession('mobilenet_v2.onnx')
+    sess_ref = rt.InferenceSession(ref_onnx_path)
     input_name = sess_ref.get_inputs()[0].name
     output_name = sess_ref.get_outputs()[0].name
     pred_ref = sess_ref.run([output_name], {input_name: input_data})[0]
 
-    sess_my = rt.InferenceSession('mobilenet_v2_my.onnx')
+    sess_my = rt.InferenceSession(my_onnx_path)
     input_name = sess_my.get_inputs()[0].name
     output_name = sess_my.get_outputs()[0].name
     pred_my = sess_my.run([output_name], {input_name: input_data})[0]
 
     # comparing floating point numbers
     for val_ref, val_my in zip(pred_ref[0], pred_my[0]):
-        if not math.isclose(val_ref, val_my, rel_tol=1e-4):
-            print(f"not closely matched: {val_ref} {val_my}")
+        assert(math.isclose(val_ref, val_my, rel_tol=rel_tol))
 
 
 if __name__ == '__main__':
     net = MobileNetV2()
     dummy_input = torch.randn(1, 3, 244, 244)
-    torch.onnx.export(net, dummy_input, "mobilenet_v2_my.onnx", input_names=['input.1'], output_names=['output.1'])
-    compare_inference_results()
+    torch.onnx.export(net, dummy_input, "mobilenet_v2_my.onnx", input_names=[
+                      'input.1'], output_names=['output.1'])
+    compare_inference_results('mobilenet_v2.onnx', 'mobilenet_v2_my.onnx')
+    summary(net, (3, 244, 244), batch_size=1, device='cpu')
