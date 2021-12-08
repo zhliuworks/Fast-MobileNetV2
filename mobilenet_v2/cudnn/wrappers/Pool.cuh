@@ -83,6 +83,13 @@ __host__ void cudnnPoolForwardWrapper(
         y_desc, y_data_d
     ));
 
+    // upload output data to host
+    CUDA_CHECK(cudaMemcpy(
+        y_data_h, y_data_d,
+        y_shape->n * y_shape->c * y_shape->h * y_shape->w * sizeof(float),
+        cudaMemcpyDeviceToHost
+    ));
+
     /** 6. Finalize **/
     CUDA_CHECK(cudaFree(x_data_d));
     CUDA_CHECK(cudaFree(y_data_d));
