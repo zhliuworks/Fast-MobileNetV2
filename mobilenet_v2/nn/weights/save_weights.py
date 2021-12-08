@@ -1,6 +1,7 @@
+import os
+
 import onnx
 from onnx.numpy_helper import to_array
-import os
 from tqdm import trange
 
 
@@ -30,9 +31,9 @@ def npy2str(arr):
                 ret1 = []
                 for arr1 in arr2:
                     ret1.append(' '.join(str(i) for i in arr1))
-                ret2.append(' '.join(ret1))   
+                ret2.append(' '.join(ret1))
             ret3.append(' '.join(ret2))
-        return ' '.join(ret3)        
+        return ' '.join(ret3)
 
 
 def save_onnx_weights(input_path, output_path):
@@ -50,6 +51,7 @@ def save_onnx_weights(input_path, output_path):
             f.write(npy2str(to_array(initializers[(i << 1) + 2])))
         with open(os.path.join(output_path, 'conv', f'{i}.b'), 'w') as f:
             f.write(npy2str(to_array(initializers[(i << 1) + 3])))
-    
+
+
 if __name__ == '__main__':
-    save_onnx_weights('../../../parse_onnx/mobilenet_v2.onnx', '.')
+    save_onnx_weights('../onnx/mobilenet_v2.onnx', '.')
