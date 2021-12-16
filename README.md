@@ -1,16 +1,6 @@
 # Fast-MobileNetV2
 Optimized CUDA Kernels for Fast MobileNetV2 Inference
 
-## Logs
-
-Updated:  2021/12/16
-
-**TODO:** 
-
-- [ ] Winograd conv kernel
-- [ ] Inference error problem
-- [ ] Comparison of ours and cudnn, and overall optimization -- `main.cu`
-
 ## Develop Steps
 
 - [x] 1⃣️  Implement MobileNetV2 with PyTorch, and parse the given ONNX model with Python to analyze the network structure. ---  [`mobilenet_v2/nn/onnx/`](https://github.com/zhliuworks/Fast-MobileNetV2/tree/master/mobilenet_v2/nn/onnx)
@@ -19,9 +9,9 @@ Updated:  2021/12/16
   * Here, Gemm can be implemented using cuBLAS, or seen as 1x1 Conv2d using cuDNN, we take the former way)
 - [x] 4⃣️  Implement cuDNN-accelerated MobileNetV2 with wrappers and C++ network implemented above. --- [`mobilenet_v2/cudnn/`](https://github.com/zhliuworks/Fast-MobileNetV2/tree/master/mobilenet_v2/cudnn)
 - [x] 5⃣️  Implement and optimize CUDA kernels: Conv, Gemm, and Pool. --- [`mobilenet_v2/fast_mobilenet/`](https://github.com/zhliuworks/Fast-MobileNetV2/tree/master/mobilenet_v2/fast_mobilenet)
-  * Here, Conv can be implemented using *Im2Col + Gemm*, or *Winograd Algorithm* (now only the former)
+  * Here, Conv can be implemented using *Im2Col + Gemm*, or *Winograd Algorithm* (we only implemented the former)
 - [x] 6⃣️  Implement our Fast-MobileNetV2 as a whole. --- [`mobilenet_v2/fast_mobilenet/`](https://github.com/zhliuworks/Fast-MobileNetV2/tree/master/mobilenet_v2/fast_mobilenet)
-- [ ] 7⃣️  Compare and Optimize: e.g. parameters tuning, model-specific / hardware-specific optimization, ...
+- [x] 7⃣️  Compare and Optimize: e.g. parameters tuning, model-specific / hardware-specific optimization, ...
 
 ## Test Steps
 
