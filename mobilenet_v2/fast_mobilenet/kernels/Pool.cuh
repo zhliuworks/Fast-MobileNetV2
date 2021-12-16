@@ -134,68 +134,36 @@ __global__ void fastPoolKernel_v4(
     }  
 }
 
-// kernel v5: 0.003880 ms
-// 2x fewer threads, 2x more per-thread work
-__global__ void fastPoolKernel_v5(
-    float   *x_data_d,      // input feature maps on device
-    int      x_size,        // input size
-    float   *y_data_d,      // output feature maps on device
-    int      window_size    // pooling window size
-) {
-    extern __shared__ float shared[];
 
-    int tx = threadIdx.x;
-    int idx = blockIdx.x * (2 * blockDim.x) + threadIdx.x;
-    shared[tx] = (idx < x_size) ? x_data_d[idx] : 0.0f;
-    shared[tx] += (idx + blockDim.x < x_size) ? x_data_d[idx + blockDim.x] : 0.0f;
-    __syncthreads();
-
-    for (int stride = blockDim.x / 2; stride > 32; stride >>= 1) {
-        if (tx < stride) {
-            shared[tx] += shared[tx + stride];
-        }
-        __syncthreads();
-    }
-
-    if (tx < 32) {
-        warpReduce(shared, tx);
-    }
-
-    if (tx == 0) {
-        y_data_d[blockIdx.x] = shared[0] / window_size;
-    }  
-}
-
-
-// use `fastPoolKernel_v5`
+// use `fastPoolKernel_v4`
 __host__ void fastPoolWrapper(
     float       *x_data_h,      // input feature maps on host
-    TensorShape  x_shape,       // input shape
-    float       *y_data_h       // output feature maps on host (user-allocated)
+    TensorShape *x_shape,       // input shape
+    float       *y_data_h,      // output feature maps on host (user-allocated)
+    TensorShape *y_shape        // output shape
 ) {
-    assert(x_shape.n == 1);
+    assert(x_shape->n == 1);
 
     float *x_data_d, *y_data_d;
-    int x_size = x_shape.n * x_shape.c * x_shape.h * x_shape.w;
+    int x_size = x_shape->n * x_shape->c * x_shape->h * x_shape->w;
     int x_bytes = x_size * sizeof(float);
-    int y_bytes = x_shape.c * sizeof(float);
-    int window_size = x_shape.h * x_shape.w;
+    int y_bytes = x_shape->c * sizeof(float);
+    int window_size = x_shape->h * x_shape->w;
+
+    y_shape->n = 1;
+    y_shape->c = x_shape->c;
+    y_shape->h = 1;
+    y_shape->w = 1;
 
     CUDA_CHECK(cudaMalloc((void**)&x_data_d, x_bytes));
     CUDA_CHECK(cudaMalloc((void**)&y_data_d, y_bytes));
 
     CUDA_CHECK(cudaMemcpy(x_data_d, x_data_h, x_bytes, cudaMemcpyHostToDevice));
 
-    dim3 dimGrid(x_shape.c, 1, 1);
+    dim3 dimGrid(x_shape->c, 1, 1);
+    dim3 dimBlock(window_size, 1, 1);
 
-    /* for kernel v1-v4 */
-    // dim3 dimBlock(window_size, 1, 1);
-    // fastPoolKernel_v4<<<dimGrid, dimBlock, window_size * sizeof(float)>>>(x_data_d, x_size, y_data_d, window_size);
-
-    /* for kernel v5 */
-    dim3 dimBlock(window_size >> 1, 1, 1);
-    fastPoolKernel_v5<<<dimGrid, dimBlock, window_size * sizeof(float) >> 1>>>(x_data_d, x_size, y_data_d, window_size);
-
+    fastPoolKernel_v4<<<dimGrid, dimBlock, window_size * sizeof(float)>>>(x_data_d, x_size, y_data_d, window_size);
     cudaDeviceSynchronize(); CUDA_CHECK(cudaGetLastError());
 
     CUDA_CHECK(cudaMemcpy(y_data_h, y_data_d, y_bytes, cudaMemcpyDeviceToHost));
