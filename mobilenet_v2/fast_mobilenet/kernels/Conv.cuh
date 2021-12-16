@@ -182,7 +182,7 @@ __host__ void fastConvWrapper(
     if (w_shape->h == 1 && w_shape->w == 1) {
         int in_map_size = x_shape->h * x_shape->w;
         dim3 dimBlock(n, n, 1);
-        dim3 dimGrid((w_shape->k + n - 1) / n, (in_map_size + n - 1) / n, 1);
+        dim3 dimGrid((in_map_size + n - 1) / n, (w_shape->k + n - 1) / n, 1);
 
         fastConvKernel_1x1<<<dimGrid, dimBlock, (sizeof(float) * n * n << 1)>>>(
             x_data_d, w_data_d, y_data_d, in_map_size, w_shape->k, x_shape->c, activation, n
@@ -218,7 +218,7 @@ __host__ void fastConvWrapper(
         CUDA_CHECK(cudaMemcpy(col_data_d, col_data, col_bytes, cudaMemcpyHostToDevice));
 
         dim3 dimBlock(n, n, 1);
-        dim3 dimGrid((w_shape->k + n - 1) / n, (col_w + n - 1) / n, 1);
+        dim3 dimGrid((col_w + n - 1) / n, (w_shape->k + n - 1) / n, 1);
 
         fastConvKernel_im2col_gemm<<<dimGrid, dimBlock, (sizeof(float) * n * n << 1)>>>(
             col_data_d, w_data_d, y_data_d, col_w, w_shape->k, col_h, activation, n
@@ -241,7 +241,7 @@ __host__ void fastConvWrapper(
             float *y_data_g = y_data_d + g * (y_map_size * out_channel_per_group);
 
             dim3 dimBlock(n, n, 1);
-            dim3 dimGrid((out_channel_per_group + n - 1) / n, (col_w + n - 1) / n, 1);
+            dim3 dimGrid((col_w + n - 1) / n, (out_channel_per_group + n - 1) / n, 1);
 
             fastConvKernel_im2col_gemm<<<dimGrid, dimBlock, (sizeof(float) * n * n << 1)>>>(
                 col_data_g, w_data_g, y_data_g,
