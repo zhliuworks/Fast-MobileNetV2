@@ -3,14 +3,13 @@ Optimized CUDA Kernels for Fast MobileNetV2 Inference
 
 ## Logs
 
-Updated:  2021/12/11
+Updated:  2021/12/16
 
-TODO: 
+**TODO:** 
 
-* Winograd conv kernel
-* Build the whole network using our lego kernel blocks
-* Overall optimization
-* Presentation
+- [ ] Winograd conv kernel
+- [ ] Inference error problem
+- [ ] Comparison of ours and cudnn, and overall optimization -- `main.cu`
 
 ## Develop Steps
 
@@ -21,8 +20,94 @@ TODO:
 - [x] 4⃣️  Implement cuDNN-accelerated MobileNetV2 with wrappers and C++ network implemented above. --- [`mobilenet_v2/cudnn/`](https://github.com/zhliuworks/Fast-MobileNetV2/tree/master/mobilenet_v2/cudnn)
 - [x] 5⃣️  Implement and optimize CUDA kernels: Conv, Gemm, and Pool. --- [`mobilenet_v2/fast_mobilenet/`](https://github.com/zhliuworks/Fast-MobileNetV2/tree/master/mobilenet_v2/fast_mobilenet)
   * Here, Conv can be implemented using *Im2Col + Gemm*, or *Winograd Algorithm* (now only the former)
-- [ ] 6⃣️  Implement our Fast-MobileNetV2 as a whole, and compare with cuDNN version. --- [`mobilenet_v2/fast_mobilenet/`](https://github.com/zhliuworks/Fast-MobileNetV2/tree/master/mobilenet_v2/fast_mobilenet)
-- [ ] 7⃣️  Optimization: e.g. parameters tuning, model-specific / hardware-specific optimization, ...
+- [x] 6⃣️  Implement our Fast-MobileNetV2 as a whole. --- [`mobilenet_v2/fast_mobilenet/`](https://github.com/zhliuworks/Fast-MobileNetV2/tree/master/mobilenet_v2/fast_mobilenet)
+- [ ] 7⃣️  Compare and Optimize: e.g. parameters tuning, model-specific / hardware-specific optimization, ...
+
+## Test Steps
+
+#### nn
+
+* Re-implement MobileNetV2 ONNX model with PyTorch and test inference:
+
+  ```shell
+  (conda) >> cd mobilenet_v2/nn/onnx/
+  (conda) >> python pytorchMobileNetV2.py
+  ```
+
+* Save weights in MobileNetV2 ONNX model to plain-text files:
+
+  ```shell
+  (conda) >> cd mobilenet_v2/nn/weights/
+  (conda) >> python save_weights.py
+  ```
+
+* Show MobileNetV2 topology in C++ and check loaded weights:
+
+  ```shell
+  >> cd mobilenet_v2/nn/examples/
+  >> make show
+  >> ./show.out
+  >> make check
+  >> ./check.out
+  ```
+
+#### cudnn
+
+* Show version of CUDA and CUDNN:
+
+  ```shell
+  >> cd mobilenet_v2/cudnn/
+  >> bash version.sh
+  ```
+
+* Operator tests:
+
+  ```shell
+  >> cd mobilenet_v2/cudnn/tests/test_op/
+  >> make
+  >> ./testConv.o
+  >> ./testGemm.o
+  >> ./testPool.o
+  >> ./testAdd.o
+  ```
+
+* Network test:
+
+  ```shell
+  (conda) >> cd mobilenet_v2/cudnn/tests/test_net/
+  (conda) >> python generate_data.py
+  (conda) >> conda deactivate
+  >> make
+  >> ./testCudnnMobileNetV2.o
+  >> source ~/.bashrc
+  (conda) >> python compare_cudnn_onnx.py
+  ```
+
+#### our kernels
+
+* Operator tests:
+
+  ```shell
+  >> cd mobilenet_v2/fast_mobilenet/tests/test_op/
+  >> make
+  >> ./testConv.o
+  >> ./testGemm.o
+  >> ./testPool.o
+  >> ./testAdd.o
+  >> ./testIm2Col.o
+  ```
+
+* Network test:
+
+  ```shell
+  (conda) >> cd mobilenet_v2/fast_mobilenet/tests/test_net/
+  (conda) >> python generate_data.py
+  (conda) >> conda deactivate
+  >> make
+  >> ./testFastMobileNetV2.o
+  >> source ~/.bashrc
+  (conda) >> python compare_fast_onnx.py
+  ```
 
 ## Test Environment
 
