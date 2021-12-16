@@ -5,7 +5,7 @@ all:
 	make check
 
 show:
-	g++ -o show.out --std=c++11                    \
+	g++ -o show.out --std=c++11 -O3                \
 				showMobileNetV2.cc                 \
 				${BASE}/MobileNetV2.h              \
 				${BASE}/MobileNetV2.cc             \
@@ -17,7 +17,7 @@ show:
 				${BASE}/layers/ResidualAdd.h       \
 
 check:
-	g++ -o check.out --std=c++11                   \
+	g++ -o check.out --std=c++11 -O3               \
 				checkWeights.cc                    \
 				${BASE}/MobileNetV2.h              \
 				${BASE}/MobileNetV2.cc             \
