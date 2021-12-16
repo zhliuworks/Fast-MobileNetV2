@@ -118,13 +118,6 @@ __global__ void fastConvKernel_im2col_gemm(
     }
 }
 
-// Conv -- Winograd algorithm
-__global__ void fastConvKernel_winograd(
-
-) {
-    
-}
-
 // For 1x1 Conv, use `fastConvKernel_1x1`
 // For 3x3 Conv, use `fastConvKernel_im2col_gemm`
 __host__ void fastConvWrapper(
@@ -133,7 +126,6 @@ __host__ void fastConvWrapper(
     float       *w_data_h,      // filter
     FilterShape *w_shape,       // filter shape
     float       *b_data_h,      // bias
-    bool         winograd,      // for 3x3: true -> Winograd algo. / false -> Im2Col + GEMM, and for 1x1: just GEMM
     ConvConfig  *conv_cfg,      // convolution configs (padding, stride, dilation, group)
     bool         activation,    // whether to apply activation function (ReLU6)
     float       *y_data_h,      // output feature maps
@@ -188,12 +180,6 @@ __host__ void fastConvWrapper(
             x_data_d, w_data_d, y_data_d, in_map_size, w_shape->k, x_shape->c, activation, n
         );
         cudaDeviceSynchronize(); CUDA_CHECK(cudaGetLastError());
-    }
-
-    // 3x3 Conv: Winograd algo.
-    else if (winograd) {
-        // winograd algorithm implementation
-        // ...
     }
 
     // 3x3 Conv: Im2Col + GEMM

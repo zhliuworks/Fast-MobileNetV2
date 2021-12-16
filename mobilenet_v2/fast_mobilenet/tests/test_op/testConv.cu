@@ -24,7 +24,7 @@ __host__ int main() {
     float y_data_1[8];
     float y_ref_1[8] = {0, 1, 2, -3, 7, 11, 0, 7};
 
-    fastConvWrapper(x_data_1, &x_shape_1, w_data_1, &w_shape_1, b_data_1, false,
+    fastConvWrapper(x_data_1, &x_shape_1, w_data_1, &w_shape_1, b_data_1,
                     &conv_cfg_1, false, y_data_1, &y_shape_1, NUM_THREADS);
 
     assert(y_shape_1.n == 1);
@@ -50,7 +50,7 @@ __host__ int main() {
     float y_data_2[8];
     float y_ref_2[8] = {0, 1, 2, 0, 6, 6, 0, 6};
 
-    fastConvWrapper(x_data_2, &x_shape_2, w_data_2, &w_shape_2, b_data_2, false,
+    fastConvWrapper(x_data_2, &x_shape_2, w_data_2, &w_shape_2, b_data_2,
                     &conv_cfg_2, true, y_data_2, &y_shape_2, NUM_THREADS);
 
     assert(y_shape_2.n == 1);
@@ -76,7 +76,7 @@ __host__ int main() {
     float y_data_3[12];
     float y_ref_3[12] = {4, -14, -4, -13, 10, -32, -21, 2, -12, -12, 8, 23};
 
-    fastConvWrapper(x_data_3, &x_shape_3, w_data_3, &w_shape_3, b_data_3, false,
+    fastConvWrapper(x_data_3, &x_shape_3, w_data_3, &w_shape_3, b_data_3,
                     &conv_cfg_3, false, y_data_3, &y_shape_3, NUM_THREADS);
 
     assert(y_shape_3.n == 1);
@@ -102,7 +102,7 @@ __host__ int main() {
     float y_data_4[48];
     float y_ref_4[48] = {-14, 15, -11, 2, 16, -9, -24, 15, -1, 2, 11, -13, -9, -6, 5, 4, -8, 2, -5, 9, 20, 8, 3, -2, -10, -14, -1, 2, 12, 3, -10, -4, -2, 3, 2, -7, 1, 10, 2, -9, 1, 1, -4, 0, 1, -14, -22, 20};
     
-    fastConvWrapper(x_data_4, &x_shape_4, w_data_4, &w_shape_4, b_data_4, false,
+    fastConvWrapper(x_data_4, &x_shape_4, w_data_4, &w_shape_4, b_data_4,
                     &conv_cfg_4, false, y_data_4, &y_shape_4, NUM_THREADS);
 
     assert(y_shape_4.n == 1);
@@ -138,7 +138,7 @@ __host__ int main() {
 
     cudaEventRecord(start);
     for (int i = 0; i < repeated_times; i++) {
-        fastConvWrapper(x_data, &x_shape, w_data, &w_shape, b_data, false,
+        fastConvWrapper(x_data, &x_shape, w_data, &w_shape, b_data,
                         &conv_cfg, true, y_data, &y_shape, NUM_THREADS);
     }
     cudaEventRecord(end);
@@ -166,9 +166,6 @@ __host__ int main() {
     assert(y_shape.c == 96);
     assert(y_shape.h == 48);
     assert(y_shape.w == 48);
-
-    /* winograd, relu6 */
-    // ...
 
 #endif
     return 0;

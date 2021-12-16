@@ -37,9 +37,6 @@ __host__ void fastMobileNetV2(
     ConvConfig conv_cfg;
     bool activation;
 
-    // winograd / im2col
-    bool use_winograd = false;
-
     int size = x_shape.n * x_shape.c * x_shape.h * x_shape.w;
     memcpy(x_data_mid, x_data, sizeof(float) * size);
     x_shape_mid = x_shape;
@@ -75,8 +72,7 @@ __host__ void fastMobileNetV2(
 
                 fastConvWrapper(
                     x_data_mid, &x_shape_mid,
-                    w_data, &w_shape,
-                    b_data, use_winograd,
+                    w_data, &w_shape, b_data,
                     &conv_cfg, activation,
                     y_data_mid, &y_shape_mid,
                     NUM_THREADS
