@@ -1,8 +1,8 @@
 #include "../../kernels/Pool.cuh"
 
 __host__ int main() {
-    float x_data_h[65536];
-    for (int i = 0; i < 65536; i++) {
+    float x_data_h[81920];
+    for (int i = 0; i < 81920; i++) {
         x_data_h[i] = i - 32768.0f;
     }
     TensorShape x_shape(1, 1280, 8, 8);
@@ -13,10 +13,10 @@ __host__ int main() {
     fastPoolWrapper(x_data_h, &x_shape, y_data_h, &y_shape);
 
     // function test
-    assert(y_shape->n == 1);
-    assert(y_shape->c == 1280);
-    assert(y_shape->h == 1);
-    assert(y_shape->w == 1);
+    assert(y_shape.n == 1);
+    assert(y_shape.c == 1280);
+    assert(y_shape.h == 1);
+    assert(y_shape.w == 1);
 
     float avg;
     for (int i = 0; i < 1280; i++) {
