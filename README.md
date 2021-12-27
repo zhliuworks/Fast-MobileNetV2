@@ -3,15 +3,15 @@ Optimized CUDA Kernels for Fast MobileNetV2 Inference
 
 ## Develop Steps
 
-- [x] 1⃣️  Implement MobileNetV2 with PyTorch, and parse the given ONNX model with Python to analyze the network structure. ---  [`mobilenet_v2/nn/onnx/`](https://github.com/zhliuworks/Fast-MobileNetV2/tree/master/mobilenet_v2/nn/onnx)
-- [x] 2⃣️  Implement MobileNetV2 with C++ (only sequential layer structures and weights, no forward computation), and parse the given ONNX model with Python to extract the weights. --- [`mobilenet_v2/nn/`](https://github.com/zhliuworks/Fast-MobileNetV2/tree/master/mobilenet_v2/nn)
-- [x] 3⃣️  Implement wrappers and tests for cuDNN/cuBLAS primitives: Conv, Gemm, and Pool. --- [`mobilenet_v2/cudnn/`](https://github.com/zhliuworks/Fast-MobileNetV2/tree/master/mobilenet_v2/cudnn)
+- [x] ① Implement MobileNetV2 with PyTorch, and parse the given ONNX model with Python to analyze the network structure. ---  [`mobilenet_v2/nn/onnx/`](https://github.com/zhliuworks/Fast-MobileNetV2/tree/master/mobilenet_v2/nn/onnx)
+- [x] ② Implement MobileNetV2 with C++ (only sequential layer structures and weights, no forward computation), and parse the given ONNX model with Python to extract the weights. --- [`mobilenet_v2/nn/`](https://github.com/zhliuworks/Fast-MobileNetV2/tree/master/mobilenet_v2/nn)
+- [x] ③ Implement wrappers and tests for cuDNN/cuBLAS primitives: Conv, Gemm, and Pool. --- [`mobilenet_v2/cudnn/`](https://github.com/zhliuworks/Fast-MobileNetV2/tree/master/mobilenet_v2/cudnn)
   * Here, Gemm can be implemented using cuBLAS, or seen as 1x1 Conv2d using cuDNN, we take the former way)
-- [x] 4⃣️  Implement cuDNN-accelerated MobileNetV2 with wrappers and C++ network implemented above. --- [`mobilenet_v2/cudnn/`](https://github.com/zhliuworks/Fast-MobileNetV2/tree/master/mobilenet_v2/cudnn)
-- [x] 5⃣️  Implement and optimize CUDA kernels: Conv, Gemm, and Pool. --- [`mobilenet_v2/fast_mobilenet/`](https://github.com/zhliuworks/Fast-MobileNetV2/tree/master/mobilenet_v2/fast_mobilenet)
+- [x] ④ Implement cuDNN-accelerated MobileNetV2 with wrappers and C++ network implemented above. --- [`mobilenet_v2/cudnn/`](https://github.com/zhliuworks/Fast-MobileNetV2/tree/master/mobilenet_v2/cudnn)
+- [x] ⑤ Implement and optimize CUDA kernels: Conv, Gemm, and Pool. --- [`mobilenet_v2/fast_mobilenet/`](https://github.com/zhliuworks/Fast-MobileNetV2/tree/master/mobilenet_v2/fast_mobilenet)
   * Here, Conv can be implemented using *Im2Col + Gemm*, or *Winograd Algorithm* (we only implemented the former)
-- [x] 6⃣️  Implement our Fast-MobileNetV2 as a whole. --- [`mobilenet_v2/fast_mobilenet/`](https://github.com/zhliuworks/Fast-MobileNetV2/tree/master/mobilenet_v2/fast_mobilenet)
-- [x] 7⃣️  Compare and Optimize: e.g. parameters tuning, model-specific / hardware-specific optimization, ...
+- [x] ⑥ Implement our Fast-MobileNetV2 as a whole. --- [`mobilenet_v2/fast_mobilenet/`](https://github.com/zhliuworks/Fast-MobileNetV2/tree/master/mobilenet_v2/fast_mobilenet)
+- [x] ⑦ Compare and Optimize: e.g. parameters tuning, model-specific / hardware-specific optimization, ...
 
 ## Test Steps
 
